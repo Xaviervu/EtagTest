@@ -1,4 +1,5 @@
-import downloader.FileDownloadService
+package downloader
+
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.Response
@@ -12,17 +13,19 @@ import java.nio.charset.Charset
 
 class Downloader {
     companion object {
+        private const val TAG = "Task :downloader.Downloader"
+        private const val OK_RESPONSE = 200
+        private const val UP_TO_DATE = 304
 
         /**
          * Download an url if the file is not up to date
          * @param url - version to write to the file
-         * @param fileName - path of the file to write to
+         * @param cacheDir - path where the file is going to be cached
+         * @param filePath - path for file
          */
         @JvmStatic
         fun rfDownloader(url: String, cacheDir: String, filePath: String) {
-            println("XavVeg download to $filePath")
-
-
+            println("$TAG download to $filePath")
             val cacheSize = 10 * 1024 * 1024L // 10 MB
 
             val cache = Cache(File(cacheDir), cacheSize)
@@ -46,9 +49,20 @@ class Downloader {
             val result = retrofit.create(FileDownloadService::class.java)
             val response = result.downloadFileWithDynamicUrlSync(file).execute()
             val rawResponse: Response? = response.raw().networkResponse()
-            println("XavVeg successful response = ${response.isSuccessful}; rawCode = ${rawResponse?.code()} ")
+//            println("$TAG successful response = ${response.isSuccessful}; rawCode = ${downloading} ")
+            when (val code = rawResponse?.code()) {
+                UP_TO_DATE -> {
+                    println("$TAG: $filePath UP-TO-DATE")
+                }
+                OK_RESPONSE -> {
+                    println("Task :downloader.Downloader: downloading $filePath OK")
+                }
+                else -> {
+                    println("Task :downloader.Downloader: response $code!!!")
+                }
+            }
             if (!response.isSuccessful){
-                println("XavVeg error happens: ${response.message()}")
+                println("$TAG error happened: ${response.message()}")
             }
             val outputFile = File(filePath)
             if(outputFile.exists()) outputFile.delete()
@@ -59,10 +73,6 @@ class Downloader {
                 bufferSize = DEFAULT_BUFFER_SIZE
             )
             outputStream.close()
-            println("XavVeg $url Downloaded successfully to $outputFile.")
-
-
         }
-
     }
 }
